@@ -1,12 +1,13 @@
 import React from 'react';
-import { Upload, ArrowRight, Sparkles, BookOpen, ShieldCheck } from 'lucide-react';
+import { Upload, ArrowRight, Sparkles, BookOpen, ShieldCheck, Mail } from 'lucide-react';
 
 interface JoinVaultCTAProps {
   onUploadClick: () => void;
   onBrowseClick: () => void;
+  onContactClick: () => void;
 }
 
-export const JoinVaultCTA: React.FC<JoinVaultCTAProps> = ({ onUploadClick, onBrowseClick }) => {
+export const JoinVaultCTA: React.FC<JoinVaultCTAProps> = ({ onUploadClick, onBrowseClick, onContactClick }) => {
   return (
     <section className="py-16 relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="relative rounded-3xl p-8 sm:p-14 overflow-hidden bg-gradient-to-tr from-blue-900 via-indigo-950 to-purple-950 border border-blue-500/30 shadow-2xl text-white">
@@ -44,6 +45,14 @@ export const JoinVaultCTA: React.FC<JoinVaultCTAProps> = ({ onUploadClick, onBro
             >
               <span>Explore Vault</span>
               <ArrowRight className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={onContactClick}
+              className="px-8 py-3.5 rounded-full bg-transparent hover:bg-white/10 border border-white/30 text-white font-bold text-sm flex items-center gap-2 transition-all"
+            >
+              <Mail className="w-4 h-4" />
+              <span>Contact Us</span>
             </button>
           </div>
 

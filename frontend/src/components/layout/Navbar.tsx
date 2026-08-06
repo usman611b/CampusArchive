@@ -117,13 +117,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, activeTab, setActi
             {[
               { label: 'Home', key: 'home', path: '/' },
               { label: 'Browse', key: 'academics', path: '/browse' },
+              { label: 'Contact', key: 'contact', path: '/contact' },
               { label: 'Upload', key: 'upload', path: '/upload' },
               { label: 'Dashboard', key: 'dashboard', path: '/dashboard' },
             ].map((link) => (
               <button
                 key={link.key}
                 onClick={() => handleNavClick(link.key, link.path)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all ${
+                className={`px-2.5 xl:px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all ${
                   (activeTab === link.key || location.pathname === link.path || (link.key === 'academics' && (activeTab === 'browse' || location.pathname === '/academics')))
                     ? 'text-blue-800 dark:text-white bg-blue-100 dark:bg-zinc-800 border border-blue-300 dark:border-white/20 shadow-xs'
                     : 'text-slate-800 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-zinc-800'
@@ -316,6 +317,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, activeTab, setActi
             {[
               { label: 'Home', key: 'home', path: '/' },
               { label: 'Browse Vault', key: 'academics', path: '/browse' },
+              { label: 'Contact Support', key: 'contact', path: '/contact' },
               { label: 'Upload Notes', key: 'upload', path: '/upload' },
               { label: 'Dashboard', key: 'dashboard', path: '/dashboard' },
             ].map((item) => (

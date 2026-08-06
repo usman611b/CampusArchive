@@ -313,6 +313,7 @@ export const MainAppContent: React.FC = () => {
             <JoinVaultCTA
               onBrowseClick={() => handleSetActiveView('academics')}
               onUploadClick={requestUpload}
+              onContactClick={() => handleSetActiveView('contact')}
             />
           </>
         );
