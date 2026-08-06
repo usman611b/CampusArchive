@@ -93,7 +93,7 @@ export class ResourceController {
   static async getResourceById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const userId = req.user!.id;
+      const userId = req.user?.id;
       const ipAddress = req.ip;
       const resource = await ResourceService.getResourceDetail(id, userId, req.user?.role as string | undefined, ipAddress);
       return res.status(200).json({
