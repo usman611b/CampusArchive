@@ -1,0 +1,135 @@
+name: Validate and deploy production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: campusarchive-production
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "22"
+  APP_DIR: /var/www/CampusArchive
+
+jobs:
+  security:
+    name: Secret and dependency checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out complete history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan repository and history for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Fail on high or critical production dependency vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
+
+  validate:
+    name: Build and type-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build all workspaces
+        run: npm run build
+
+  deploy:
+    name: Deploy verified commit to EC2
+    needs: [security, validate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+
+    steps:
+      - name: Configure temporary AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy through AWS Systems Manager
+        env:
+          INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+          DEPLOY_COMMIT: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          cat > ssm-parameters.json <<EOF
+          {
+            "commands": [
+              "sudo -u ec2-user -H git -C ${APP_DIR} fetch origin ${DEPLOY_COMMIT}",
+              "sudo -u ec2-user -H git -C ${APP_DIR} checkout main",
+              "sudo -u ec2-user -H git -C ${APP_DIR} merge --ff-only ${DEPLOY_COMMIT}",
+              "sudo -u ec2-user -H bash ${APP_DIR}/scripts/deploy-production.sh"
+            ],
+            "executionTimeout": ["900"]
+          }
+          EOF
+
+          command_id=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy CampusArchive commit ${DEPLOY_COMMIT}" \
+            --parameters file://ssm-parameters.json \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM command: $command_id"
+
+          if ! aws ssm wait command-executed \
+            --command-id "$command_id" \
+            --instance-id "$INSTANCE_ID"; then
+            echo "Deployment command did not complete successfully."
+          fi
+
+          aws ssm get-command-invocation \
+            --command-id "$command_id" \
+            --instance-id "$INSTANCE_ID" \
+            --query '{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}'
+
+          status=$(aws ssm get-command-invocation \
+            --command-id "$command_id" \
+            --instance-id "$INSTANCE_ID" \
+            --query "Status" \
+            --output text)
+
+          test "$status" = "Success"
+
+      - name: Verify public HTTPS endpoint
+        run: curl --fail --silent --show-error --retry 6 --retry-delay 10 https://campusarchive.usmanalii.com/ >/dev/null

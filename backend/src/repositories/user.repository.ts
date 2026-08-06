@@ -100,4 +100,34 @@ export class UserRepository {
     if (error || !data) return 0;
     return data.karma_score || 0;
   }
+
+  static async anonymizeAndDelete(userId: string): Promise<void> {
+    const deletedIdentity = `deleted_${userId.replace(/-/g, '')}`;
+    const { error } = await supabase
+      .from('users')
+      .update({
+        email: `${deletedIdentity}@deleted.invalid`,
+        username: deletedIdentity,
+        full_name: 'Deleted User',
+        password_hash: 'ACCOUNT_DELETED',
+        avatar_url: null,
+        bio: null,
+        is_suspended: true,
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+      .is('deleted_at', null);
+
+    if (error) throw error;
+  }
+
+  static async updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
+    const { error } = await supabase
+      .from('users')
+      .update({ password_hash: passwordHash, updated_at: new Date().toISOString() })
+      .eq('id', userId)
+      .is('deleted_at', null);
+    if (error) throw error;
+  }
 }

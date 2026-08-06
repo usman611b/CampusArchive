@@ -50,6 +50,15 @@ export class AuthService {
     return response.data.data.user;
   }
 
+  static async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await apiClient.patch('/auth/password', { currentPassword, newPassword });
+  }
+
+  static async deleteAccount(currentPassword: string): Promise<void> {
+    await apiClient.delete('/auth/me', { data: { currentPassword } });
+    localStorage.removeItem('access_token');
+  }
+
   static async forgotPassword(email: string): Promise<string> {
     return 'Password reset instructions sent to email.';
   }

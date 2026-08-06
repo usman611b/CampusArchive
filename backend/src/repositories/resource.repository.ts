@@ -4,6 +4,18 @@ import { CreateResourceInput } from '../validators/resource.validator';
 import { AnalyticsService } from '../services/analytics.service';
 
 export class ResourceRepository {
+  private static anonymizeIp(ipAddress?: string): string | null {
+    if (!ipAddress) return null;
+    const normalized = ipAddress.replace(/^::ffff:/, '');
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(normalized)) {
+      return normalized.replace(/\.\d+$/, '.0');
+    }
+    if (normalized.includes(':')) {
+      return `${normalized.split(':').slice(0, 4).join(':')}::`;
+    }
+    return null;
+  }
+
   static async checkFileHashExists(fileHash: string): Promise<boolean> {
     const { data, error } = await supabase
       .from('resources')
@@ -97,7 +109,7 @@ export class ResourceRepository {
       file_hash: fileHash,
       mime_type: mimeType,
       file_size_bytes: fileSizeBytes,
-      virus_scan_status: 'PASSED'
+      virus_scan_status: 'PENDING'
     });
 
     if (error) throw error;
@@ -107,8 +119,8 @@ export class ResourceRepository {
     await supabase.from('downloads').insert({
       resource_id: resourceId,
       user_id: userId || null,
-      ip_address: ipAddress || '127.0.0.1',
-      device_info: deviceInfo || 'Browser Client'
+      ip_address: this.anonymizeIp(ipAddress),
+      device_info: (deviceInfo || 'Browser Client').slice(0, 255)
     });
 
     // Increment downloads count in analytics table
@@ -135,7 +147,7 @@ export class ResourceRepository {
     await supabase.from('views').insert({
       resource_id: resourceId,
       user_id: userId || null,
-      ip_address: ipAddress || '127.0.0.1'
+      ip_address: this.anonymizeIp(ipAddress)
     });
 
     const { data: analytics } = await supabase

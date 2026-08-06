@@ -13,7 +13,7 @@ router.post('/comments', authenticateJwt, writeLimiter, InteractionController.cr
 router.patch('/comments/:id', authenticateJwt, writeLimiter, InteractionController.updateComment);
 router.delete('/comments/:id', authenticateJwt, writeLimiter, InteractionController.deleteComment);
 router.post('/comments/:id/likes', authenticateJwt, writeLimiter, InteractionController.toggleLike);
-router.patch('/resources/:id/comments/lock', authenticateJwt, InteractionController.lockComments);
+router.patch('/resources/:id/comments/lock', authenticateJwt, writeLimiter, InteractionController.lockComments);
 router.get('/resources/:id/ratings', optionalAuthenticateJwt, InteractionController.getRatings);
 router.get('/resources/:id/comments', optionalAuthenticateJwt, InteractionController.getComments);
 

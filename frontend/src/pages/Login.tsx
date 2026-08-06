@@ -18,7 +18,13 @@ export const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const from = (location.state as any)?.from?.pathname || '/dashboard';
+  const requestedPath = (location.state as any)?.from?.pathname;
+  const from = typeof requestedPath === 'string'
+    && requestedPath.startsWith('/')
+    && !requestedPath.startsWith('//')
+    && !requestedPath.includes('\\')
+    ? requestedPath
+    : '/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -5,12 +5,15 @@ import { createPreSignedUrlSchema, createResourceSchema, rateResourceSchema } fr
 import { ResourceMapper } from '../dtos/resource.dto';
 import { supabase } from '../config/database';
 import { InteractionService } from '../services/interaction.service';
+import sanitizeHtml from 'sanitize-html';
+
+const cleanPlainText = (value: string) => sanitizeHtml(value.trim(), { allowedTags: [], allowedAttributes: {} }).trim();
 
 export class ResourceController {
   static async getUploadUrl(req: Request, res: Response, next: NextFunction) {
     try {
       const validatedInput = createPreSignedUrlSchema.parse(req.body);
-      const data = await ResourceService.generateUploadUrl(validatedInput);
+      const data = await ResourceService.generateUploadUrl(req.user!.id, validatedInput);
       return res.status(200).json({
         success: true,
         message: 'Pre-signed upload URL generated successfully.',
@@ -92,7 +95,7 @@ export class ResourceController {
       const { id } = req.params;
       const userId = req.user?.id;
       const ipAddress = req.ip;
-      const resource = await ResourceService.getResourceDetail(id, userId, ipAddress);
+      const resource = await ResourceService.getResourceDetail(id, userId, req.user?.role as string | undefined, ipAddress);
       return res.status(200).json({
         success: true,
         message: 'Resource detail retrieved.',
@@ -109,7 +112,7 @@ export class ResourceController {
       const userId = req.user?.id;
       const ipAddress = req.ip;
       const deviceInfo = req.headers['user-agent'];
-      const downloadData = await ResourceService.downloadResource(id, userId, ipAddress, deviceInfo);
+      const downloadData = await ResourceService.downloadResource(id, userId, req.user?.role as string | undefined, ipAddress, deviceInfo);
       return res.status(200).json({
         success: true,
         message: 'Download audit logged.',
@@ -205,8 +208,13 @@ export class ResourceController {
       const { courseId } = req.params;
       const { content, parentCommentId } = req.body;
 
-      if (!content || !content.trim()) {
+      if (typeof content !== 'string') {
         return res.status(400).json({ success: false, message: 'Comment content is required.', data: null });
+      }
+
+      const safeContent = cleanPlainText(content);
+      if (!safeContent || safeContent.length > 2000) {
+        return res.status(400).json({ success: false, message: 'Comment must contain 1 to 2000 plain-text characters.', data: null });
       }
 
       const { data: comment, error } = await supabase
@@ -214,7 +222,7 @@ export class ResourceController {
         .insert({
           user_id: userId,
           course_id: courseId,
-          content: content.trim(),
+          content: safeContent,
           parent_comment_id: parentCommentId || null
         })
         .select(`

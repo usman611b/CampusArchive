@@ -21,7 +21,10 @@ router.get('/', async (req, res, next) => {
       limit = '20'
     } = req.query as Record<string, string>;
 
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
+    const safeLimit = Math.min(50, Math.max(1, Number.parseInt(limit, 10) || 20));
+    const offset = (safePage - 1) * safeLimit;
+    const safeSearch = q.trim().slice(0, 100).replace(/[,%()]/g, ' ');
 
     let query = supabase
       .from('resources')
@@ -83,7 +86,7 @@ router.get('/', async (req, res, next) => {
             return res.status(200).json({
               success: true,
               message: 'Search results retrieved.',
-              data: { resources: [], total: 0, page: parseInt(page), limit: parseInt(limit) }
+              data: { resources: [], total: 0, page: safePage, limit: safeLimit }
             });
           }
         }
@@ -91,8 +94,8 @@ router.get('/', async (req, res, next) => {
     }
 
     // Full-text search on title + description
-    if (q.trim()) {
-      query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%`);
+    if (safeSearch) {
+      query = query.or(`title.ilike.%${safeSearch}%,description.ilike.%${safeSearch}%`);
     }
 
     // Category filter by slug
@@ -114,7 +117,7 @@ router.get('/', async (req, res, next) => {
       query = query.order('created_at', { ascending: false });
     }
 
-    query = query.range(offset, offset + parseInt(limit) - 1);
+    query = query.range(offset, offset + safeLimit - 1);
 
     const { data: resources, error, count } = await query;
     if (error) throw new Error(error.message);
@@ -127,8 +130,8 @@ router.get('/', async (req, res, next) => {
       data: {
         resources: dtoResources,
         total: count || 0,
-        page: parseInt(page),
-        limit: parseInt(limit)
+        page: safePage,
+        limit: safeLimit
       }
     });
   } catch (error) {

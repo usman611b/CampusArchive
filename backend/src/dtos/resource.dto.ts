@@ -13,9 +13,7 @@ export interface ResourceResponseDto {
   categoryName?: string;
   title: string;
   description: string;
-  fileStoragePath: string;
   downloadUrl?: string;
-  fileHash: string;
   fileType: string;
   fileSizeFormatted: string;
   fileSizeBytes: number;
@@ -89,8 +87,6 @@ export class ResourceMapper {
       categoryName: resourceRow.categories?.name || 'General',
       title: resourceRow.title,
       description: resourceRow.description,
-      fileStoragePath: resourceRow.file_storage_path,
-      fileHash: resourceRow.file_hash,
       fileType,
       fileSizeFormatted: this.formatBytes(bytes),
       fileSizeBytes: bytes,

@@ -1,8 +1,9 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { createHash } from 'crypto';
 import { env } from '../config/env';
 import { UserRepository } from '../repositories/user.repository';
-import { RegisterInput, LoginInput, UpdateProfileInput } from '../validators/auth.validator';
+import { RegisterInput, LoginInput, UpdateProfileInput, ChangePasswordInput } from '../validators/auth.validator';
 import { UserMapper, UserResponseDto } from '../dtos/user.dto';
 
 export class AuthService {
@@ -17,19 +18,15 @@ export class AuthService {
       throw new Error('USERNAME_EXISTS: This username is already taken.');
     }
 
-    const passwordHash = await bcrypt.hash(input.password, 10);
-
-    // Auto-promote if matches FIRST_ADMIN_EMAIL
-    const isFirstAdmin = env.FIRST_ADMIN_EMAIL && env.FIRST_ADMIN_EMAIL.toLowerCase() === input.email.trim().toLowerCase();
-    const assignedRole = isFirstAdmin ? 'ADMINISTRATOR' : 'STUDENT';
+    const passwordHash = await bcrypt.hash(input.password, 12);
 
     const newUserRow = await UserRepository.createUser({
       ...input,
-      role: assignedRole as any,
+      role: 'STUDENT',
       passwordHash
     });
 
-    const token = this.generateToken(newUserRow.id, newUserRow.role);
+    const token = this.generateToken(newUserRow.id, newUserRow.role, newUserRow.password_hash);
     const userDto = UserMapper.toDto(newUserRow, 0);
 
     return { user: userDto, token };
@@ -46,15 +43,8 @@ export class AuthService {
       throw new Error('INVALID_CREDENTIALS: Invalid email or password credentials.');
     }
 
-    // Auto-promote if matches FIRST_ADMIN_EMAIL and not yet ADMINISTRATOR/SUPER_ADMIN
-    const isFirstAdmin = env.FIRST_ADMIN_EMAIL && env.FIRST_ADMIN_EMAIL.toLowerCase() === input.email.trim().toLowerCase();
-    if (isFirstAdmin && userRow.role !== 'ADMINISTRATOR' && userRow.role !== 'SUPER_ADMIN') {
-      await UserRepository.updateUser(userRow.id, { role: 'ADMINISTRATOR' as any });
-      userRow.role = 'ADMINISTRATOR' as any;
-    }
-
     const karmaScore = await UserRepository.getKarmaScore(userRow.id);
-    const token = this.generateToken(userRow.id, userRow.role);
+    const token = this.generateToken(userRow.id, userRow.role, userRow.password_hash);
     const userDto = UserMapper.toDto(userRow, karmaScore);
 
     return { user: userDto, token };
@@ -87,9 +77,28 @@ export class AuthService {
     return UserMapper.toDto(updatedRow, karmaScore);
   }
 
-  private static generateToken(userId: string, role: string): string {
+  static async deleteAccount(userId: string, currentPassword: string): Promise<void> {
+    const userRow = await UserRepository.findById(userId);
+    if (!userRow || !(await bcrypt.compare(currentPassword, userRow.password_hash))) {
+      throw new Error('INVALID_CREDENTIALS: Current password is incorrect.');
+    }
+    await UserRepository.anonymizeAndDelete(userId);
+  }
+
+  static async changePassword(userId: string, input: ChangePasswordInput): Promise<void> {
+    const userRow = await UserRepository.findById(userId);
+    if (!userRow || !(await bcrypt.compare(input.currentPassword, userRow.password_hash))) {
+      throw new Error('INVALID_CREDENTIALS: Current password is incorrect.');
+    }
+
+    const passwordHash = await bcrypt.hash(input.newPassword, 12);
+    await UserRepository.updatePasswordHash(userId, passwordHash);
+  }
+
+  private static generateToken(userId: string, role: string, passwordHash: string): string {
     const secret: jwt.Secret = env.JWT_SECRET;
-    return jwt.sign({ sub: userId, role }, secret, {
+    const passwordVersion = createHash('sha256').update(passwordHash).digest('hex').slice(0, 16);
+    return jwt.sign({ sub: userId, role, pwd: passwordVersion }, secret, {
       expiresIn: '7d'
     });
   }

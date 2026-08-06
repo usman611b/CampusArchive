@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
-import { registerSchema, loginSchema, updateProfileSchema } from '../validators/auth.validator';
+import { registerSchema, loginSchema, updateProfileSchema, changePasswordSchema, deleteAccountSchema } from '../validators/auth.validator';
 
 export class AuthController {
   static async register(req: Request, res: Response, next: NextFunction) {
@@ -55,6 +55,30 @@ export class AuthController {
         message: 'Profile updated successfully.',
         data: { user: updatedUser }
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteMe(req: Request, res: Response, next: NextFunction) {
+    try {
+      const input = deleteAccountSchema.parse(req.body);
+      await AuthService.deleteAccount(req.user!.id, input.currentPassword);
+      return res.status(200).json({
+        success: true,
+        message: 'Account deleted and personal profile data anonymized.',
+        data: null
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const input = changePasswordSchema.parse(req.body);
+      await AuthService.changePassword(req.user!.id, input);
+      return res.status(200).json({ success: true, message: 'Password changed successfully.', data: null });
     } catch (error) {
       next(error);
     }

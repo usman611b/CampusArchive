@@ -85,7 +85,6 @@ export interface ResourceApiItem {
   courseTitle?: string;
   title: string;
   description: string;
-  fileStoragePath: string;
   fileType?: string;
   fileSizeFormatted?: string;
   status: string;

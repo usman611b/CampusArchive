@@ -5,10 +5,9 @@ import { authenticateJwt } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// Rate limiter for authentication endpoints (5 requests per minute)
-const authLimiter = rateLimit({
+const loginLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
+  max: 5,
   message: {
     success: false,
     message: 'Too many authentication attempts. Please try again in 60 seconds.',
@@ -16,9 +15,23 @@ const authLimiter = rateLimit({
   }
 });
 
-router.post('/register', authLimiter, AuthController.register);
-router.post('/login', authLimiter, AuthController.login);
+const registrationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many account creation attempts. Please try again later.',
+    data: null
+  }
+});
+
+router.post('/register', registrationLimiter, AuthController.register);
+router.post('/login', loginLimiter, AuthController.login);
 router.get('/me', authenticateJwt, AuthController.getMe);
 router.put('/profile', authenticateJwt, AuthController.updateProfile);
+router.patch('/password', authenticateJwt, loginLimiter, AuthController.changePassword);
+router.delete('/me', authenticateJwt, AuthController.deleteMe);
 
 export default router;

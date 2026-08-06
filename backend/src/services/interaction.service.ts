@@ -44,7 +44,8 @@ export class InteractionService {
       .eq('resource_id', resourceId).order('created_at', { ascending: false });
     if (error) throw error;
     const summary = await this.refreshResource(resourceId);
-    return { ratings: data || [], ...summary, userRating: (data || []).find((r) => r.user_id === userId) || null };
+    const userRating = (data || []).find((rating) => rating.user_id === userId) || null;
+    return { ratings: userRating ? [userRating] : [], ...summary, userRating };
   }
 
   static async createRating(userId: string, resourceId: string, rating: number) {

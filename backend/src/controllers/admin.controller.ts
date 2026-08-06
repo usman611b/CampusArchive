@@ -226,20 +226,23 @@ export class AdminController {
   static async getUsers(req: Request, res: Response, next: NextFunction) {
     try {
       const { q = '', role, status, page = '1', limit = '20' } = req.query as Record<string, string>;
-      const offset = (parseInt(page) - 1) * parseInt(limit);
+      const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
+      const safeLimit = Math.min(50, Math.max(1, Number.parseInt(limit, 10) || 20));
+      const safeSearch = q.trim().slice(0, 100).replace(/[,%()]/g, ' ');
+      const offset = (safePage - 1) * safeLimit;
 
       let query = supabase
         .from('users')
         .select('id, full_name, username, email, role, deleted_at, created_at, avatar_url, university_name', { count: 'exact' });
 
-      if (q.trim()) {
-        query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%,username.ilike.%${q}%`);
+      if (safeSearch) {
+        query = query.or(`full_name.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%,username.ilike.%${safeSearch}%`);
       }
       if (role && role !== 'ALL') query = query.eq('role', role);
       if (status === 'suspended') query = query.not('deleted_at', 'is', null);
       if (status === 'active') query = query.is('deleted_at', null);
 
-      query = query.order('created_at', { ascending: false }).range(offset, offset + parseInt(limit) - 1);
+      query = query.order('created_at', { ascending: false }).range(offset, offset + safeLimit - 1);
 
       const { data, error, count } = await query;
       if (error) throw error;
@@ -247,7 +250,7 @@ export class AdminController {
       return res.status(200).json({
         success: true,
         message: 'Users retrieved.',
-        data: { users: data || [], total: count || 0, page: parseInt(page), limit: parseInt(limit) }
+        data: { users: data || [], total: count || 0, page: safePage, limit: safeLimit }
       });
     } catch (error) {
       next(error);

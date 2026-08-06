@@ -156,8 +156,10 @@ export const Register: React.FC = () => {
               <Input
                 label="Password"
                 type="password"
-                placeholder="Min 4 characters"
+                placeholder="12+ chars with upper, lower & number"
                 required
+                minLength={12}
+                maxLength={128}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 leftIcon={<Lock className="w-4 h-4" />}

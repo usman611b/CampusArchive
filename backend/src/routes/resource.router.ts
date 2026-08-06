@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { ResourceController } from '../controllers/resource.controller';
-import { authenticateJwt } from '../middlewares/auth.middleware';
+import { authenticateJwt, optionalAuthenticateJwt } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -15,6 +15,9 @@ const uploadLimiter = rateLimit({
   }
 });
 
+const discussionLimiter = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
+const downloadLimiter = rateLimit({ windowMs: 60_000, max: 30, standardHeaders: true, legacyHeaders: false });
+
 // Upload Pipeline
 router.post('/upload-url', authenticateJwt, uploadLimiter, ResourceController.getUploadUrl);
 router.post('/', authenticateJwt, uploadLimiter, ResourceController.createResource);
@@ -27,14 +30,14 @@ router.get('/course/:courseId', ResourceController.getCourseResources);
 
 // Course Discussions (Q&A)
 router.get('/course/:courseId/comments', ResourceController.getCourseComments);
-router.post('/course/:courseId/comments', authenticateJwt, ResourceController.postCourseComment);
+router.post('/course/:courseId/comments', authenticateJwt, discussionLimiter, ResourceController.postCourseComment);
 
 // Course Contributors
 router.get('/course/:courseId/contributors', ResourceController.getCourseContributors);
 
 // Individual Resource
-router.get('/:id', ResourceController.getResourceById);
-router.post('/:id/download', ResourceController.downloadResource);
+router.get('/:id', optionalAuthenticateJwt, ResourceController.getResourceById);
+router.post('/:id/download', optionalAuthenticateJwt, downloadLimiter, ResourceController.downloadResource);
 router.post('/:id/bookmark', authenticateJwt, ResourceController.toggleBookmark);
 router.post('/:id/rate', authenticateJwt, ResourceController.rateResource);
 

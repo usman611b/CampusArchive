@@ -26,7 +26,8 @@ import {
   Save,
   Mail,
   GraduationCap,
-  FileText
+  FileText,
+  Trash2
 } from 'lucide-react';
 
 interface ProfileViewProps {
@@ -35,7 +36,7 @@ interface ProfileViewProps {
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ sampleResources, onSelectResource }) => {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const [activeMainTab, setActiveMainTab] = useState<'overview' | 'settings' | 'security'>('overview');
   const [activeSubTab, setActiveSubTab] = useState<'uploads' | 'bookmarks'>('uploads');
 
@@ -123,7 +124,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ sampleResources, onSel
         username,
         universityName: university,
         bio,
-        avatarUrl: avatarPreview || undefined
+        avatarUrl: avatarPreview?.startsWith('http') ? avatarPreview : undefined
       });
       await refreshUser();
       setSaveSuccessMessage('Profile settings saved to Supabase PostgreSQL!');
@@ -135,21 +136,45 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ sampleResources, onSel
     }
   };
 
-  const handleSaveSecurity = (e: React.FormEvent) => {
+  const handleSaveSecurity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
       alert('New passwords do not match!');
       return;
     }
+    if (newPassword.length < 12) {
+      alert('New password must be at least 12 characters.');
+      return;
+    }
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      await AuthService.changePassword(currentPassword, newPassword);
       setIsSaving(false);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setSaveSuccessMessage('Password changed successfully!');
-      setTimeout(() => setSaveSuccessMessage(''), 3000);
-    }, 1000);
+      await logout();
+      window.location.assign('/login');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to change password.');
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!currentPassword) {
+      alert('Enter your current password above before deleting your account.');
+      return;
+    }
+    const confirmation = window.prompt('Type DELETE to permanently anonymize and disable your account.');
+    if (confirmation !== 'DELETE') return;
+    try {
+      await AuthService.deleteAccount(currentPassword);
+      await logout();
+      window.location.assign('/');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to delete account.');
+    }
   };
 
   return (
@@ -379,6 +404,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ sampleResources, onSel
               </Button>
             </div>
           </form>
+
         </Card>
       )}
 
@@ -424,6 +450,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ sampleResources, onSel
               </Button>
             </div>
           </form>
+
+          <div className="border-t border-red-500/20 pt-6 mt-8">
+            <h3 className="text-sm font-extrabold text-red-500">Delete account</h3>
+            <p className="text-xs text-theme-secondary mt-1 mb-4">Enter your current password above, then permanently anonymize your profile and disable sign-in while preserving shared academic resources.</p>
+            <Button type="button" variant="danger" onClick={handleDeleteAccount} leftIcon={<Trash2 className="w-4 h-4" />}>
+              Delete My Account
+            </Button>
+          </div>
         </Card>
       )}
     </div>

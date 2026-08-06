@@ -8,6 +8,8 @@ export class BootstrapService {
    * when starting up, eliminating manual SQL queries in production environments.
    */
   static async runBootstrap(): Promise<void> {
+    if (!env.ENABLE_FIRST_ADMIN_BOOTSTRAP) return;
+
     const adminEmail = env.FIRST_ADMIN_EMAIL;
     if (!adminEmail || !adminEmail.trim()) {
       return;

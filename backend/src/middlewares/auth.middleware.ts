@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { createHash } from 'crypto';
 import { env } from '../config/env';
 import { supabase } from '../config/database';
 import { UserRole, Permission, RolePermissions } from '@campusarchive/shared';
@@ -16,35 +17,45 @@ export const authenticateJwt = async (req: Request, res: Response, next: NextFun
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET) as { sub: string; role: any };
-    let currentRole = decoded.role;
+    const decoded = jwt.verify(token, env.JWT_SECRET) as { sub: string; role: any; pwd?: string };
+    const { data: dbUser, error: dbError } = await supabase
+      .from('users')
+      .select('role, deleted_at, is_suspended, password_hash')
+      .eq('id', decoded.sub)
+      .maybeSingle();
 
-    // Fetch dynamic role from database to ensure newly promoted roles take effect immediately
-    try {
-      const { data: dbUser } = await supabase
-        .from('users')
-        .select('role, deleted_at')
-        .eq('id', decoded.sub)
-        .single();
+    // Authorization must fail closed. Never trust a role cached in a JWT when
+    // the authoritative user record cannot be checked.
+    if (dbError) {
+      return res.status(503).json({
+        success: false,
+        message: 'Authentication service is temporarily unavailable.',
+        data: null
+      });
+    }
 
-      if (dbUser?.deleted_at) {
-        return res.status(403).json({
-          success: false,
-          error: {
-            code: 'ACCOUNT_SUSPENDED',
-            message: 'Your account has been suspended by an administrator.'
-          }
-        });
-      }
+    if (!dbUser) {
+      return res.status(401).json({ success: false, message: 'Account no longer exists.', data: null });
+    }
 
-      if (dbUser) {
-        currentRole = dbUser.role || decoded.role;
-      }
-    } catch {}
+    if (dbUser.deleted_at || dbUser.is_suspended) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'ACCOUNT_SUSPENDED',
+          message: 'Your account has been suspended or deleted.'
+        }
+      });
+    }
+
+    const passwordVersion = createHash('sha256').update(dbUser.password_hash).digest('hex').slice(0, 16);
+    if (!decoded.pwd || decoded.pwd !== passwordVersion) {
+      return res.status(401).json({ success: false, message: 'Session is no longer valid. Please sign in again.', data: null });
+    }
 
     req.user = {
       id: decoded.sub,
-      role: currentRole as UserRole
+      role: dbUser.role as UserRole
     };
     next();
   } catch (error) {
@@ -57,12 +68,22 @@ export const authenticateJwt = async (req: Request, res: Response, next: NextFun
 };
 
 /** Adds request identity when a valid token is present while keeping public reads public. */
-export const optionalAuthenticateJwt = (req: Request, _res: Response, next: NextFunction) => {
+export const optionalAuthenticateJwt = async (req: Request, _res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith('Bearer ')) {
     try {
-      const decoded = jwt.verify(authHeader.slice(7), env.JWT_SECRET) as { sub: string; role: UserRole };
-      req.user = { id: decoded.sub, role: decoded.role };
+      const decoded = jwt.verify(authHeader.slice(7), env.JWT_SECRET) as { sub: string; role: UserRole; pwd?: string };
+      const { data: dbUser, error } = await supabase
+        .from('users')
+        .select('role, deleted_at, is_suspended, password_hash')
+        .eq('id', decoded.sub)
+        .maybeSingle();
+      const passwordVersion = dbUser
+        ? createHash('sha256').update(dbUser.password_hash).digest('hex').slice(0, 16)
+        : null;
+      if (!error && dbUser && !dbUser.deleted_at && !dbUser.is_suspended && decoded.pwd === passwordVersion) {
+        req.user = { id: decoded.sub, role: dbUser.role as UserRole };
+      }
     } catch { /* Invalid optional credentials are treated as anonymous. */ }
   }
   next();

@@ -9,12 +9,25 @@ dotenv.config(); // Fallback to root .env
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('4000').transform((val) => parseInt(val, 10)),
-  SUPABASE_URL: z.string().url().default('https://xyz.supabase.co'),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(10).default('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_key'),
-  JWT_SECRET: z.string().min(16).default('super_secret_campusarchive_jwt_key_2026'),
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(32),
+  JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default('7d'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
-  FIRST_ADMIN_EMAIL: z.string().email().optional().or(z.literal(''))
+  FIRST_ADMIN_EMAIL: z.string().email().optional().or(z.literal('')),
+  ENABLE_FIRST_ADMIN_BOOTSTRAP: z.enum(['true', 'false']).default('false').transform((value) => value === 'true')
 });
 
-export const env = envSchema.parse(process.env);
+const parsedEnv = envSchema.parse(process.env);
+
+if (parsedEnv.NODE_ENV === 'production') {
+  if (!parsedEnv.CORS_ORIGIN.split(',').every((origin) => origin.trim().startsWith('https://'))) {
+    throw new Error('CORS_ORIGIN must contain only HTTPS origins in production.');
+  }
+
+  if (/replace|dummy|your[-_]?project|example/i.test(parsedEnv.SUPABASE_URL + parsedEnv.SUPABASE_SERVICE_ROLE_KEY + parsedEnv.JWT_SECRET)) {
+    throw new Error('Production secrets contain placeholder values.');
+  }
+}
+
+export const env = parsedEnv;
