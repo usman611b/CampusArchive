@@ -34,6 +34,7 @@ import { PageHeader } from './components/ui/PageHeader';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
+import ContactView from './pages/ContactView';
 
 // Domain Models
 import { Course } from './types/academic';
@@ -56,6 +57,7 @@ const PATH_TO_VIEW: Record<string, string> = {
   '/profile': 'profile',
   '/admin': 'admin',
   '/course-hub': 'course-hub',
+  '/contact': 'contact',
 };
 
 const VIEW_TO_PATH: Record<string, string> = {};
@@ -283,6 +285,9 @@ export const MainAppContent: React.FC = () => {
 
       case 'notifications':
         return <NotificationsView />;
+
+      case 'contact':
+        return <ContactView />;
 
       case 'profile':
         return <ProfileView sampleResources={[]} onSelectResource={setSelectedResource} />;

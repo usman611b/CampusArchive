@@ -15,7 +15,10 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('7d'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   FIRST_ADMIN_EMAIL: z.string().email().optional().or(z.literal('')),
-  ENABLE_FIRST_ADMIN_BOOTSTRAP: z.enum(['true', 'false']).default('false').transform((value) => value === 'true')
+  ENABLE_FIRST_ADMIN_BOOTSTRAP: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
+  RESEND_API_KEY: z.string().min(20).optional().or(z.literal('')),
+  EMAIL_FROM: z.string().default('CampusArchive <notifications@usmanalii.com>'),
+  SUPPORT_EMAIL: z.string().email().default('support@usmanalii.com')
 });
 
 const parsedEnv = envSchema.parse(process.env);

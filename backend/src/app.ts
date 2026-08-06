@@ -12,6 +12,7 @@ import searchRouter from './routes/search.router';
 import notificationsRouter from './routes/notifications.router';
 import bookmarksRouter from './routes/bookmarks.router';
 import interactionRouter from './routes/interaction.router';
+import contactRouter from './routes/contact.router';
 import { errorHandler } from './middlewares/error.middleware';
 import { env } from './config/env';
 
@@ -70,6 +71,7 @@ app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/search', searchRouter);
 app.use('/api/v1/notifications', notificationsRouter);
 app.use('/api/v1/bookmarks', bookmarksRouter);
+app.use('/api/v1/contact', contactRouter);
 app.use('/api/v1', interactionRouter);
 
 // Global Error Handler

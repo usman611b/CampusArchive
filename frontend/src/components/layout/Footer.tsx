@@ -1,5 +1,6 @@
 import React from 'react';
 import { BookOpen, Github, Twitter, Linkedin, Heart } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Footer: React.FC = () => {
   return (
@@ -45,6 +46,7 @@ export const Footer: React.FC = () => {
               <li><a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">System Architecture</a></li>
               <li><a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Supabase Cloud Storage</a></li>
               <li><a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Academic Integrity</a></li>
+              <li><Link to="/contact" className="hover:text-slate-900 dark:hover:text-white transition-colors">Contact & Support</Link></li>
               <li><a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Moderator Guidelines</a></li>
             </ul>
           </div>

@@ -8,6 +8,7 @@ import {
   PendingResource,
   AdminUser,
   AuditLogItem
+  ,ContactInquiry
 } from '../services/adminService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -37,9 +38,10 @@ import {
   RefreshCw,
   Sparkles,
   Lock
+  ,Inbox
 } from 'lucide-react';
 
-type AdminTab = 'overview' | 'moderation' | 'users' | 'audit' | 'announcements';
+type AdminTab = 'overview' | 'moderation' | 'users' | 'audit' | 'support' | 'announcements';
 
 const ROLE_COLORS: Record<string, string> = {
   SUPER_ADMIN: 'bg-gradient-to-r from-amber-500 to-purple-600 text-white font-black shadow-xs',
@@ -84,6 +86,11 @@ export const AdminDashboardView: React.FC = () => {
   // Audit Logs
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
+
+  // Contact & Support Inbox
+  const [contactRequests, setContactRequests] = useState<ContactInquiry[]>([]);
+  const [contactStatusFilter, setContactStatusFilter] = useState('ALL');
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
 
   // Announcements
   const [announcementTitle, setAnnouncementTitle] = useState('');
@@ -147,6 +154,16 @@ export const AdminDashboardView: React.FC = () => {
     }
   }, [activeTab, isAllowedAdmin]);
 
+  useEffect(() => {
+    if (activeTab === 'support' && isAllowedAdmin) {
+      setIsLoadingContacts(true);
+      AdminService.getContactRequests(contactStatusFilter)
+        .then(setContactRequests)
+        .catch((err: any) => showError('Support Inbox Failed', err?.response?.data?.message || 'Unable to load support requests.'))
+        .finally(() => setIsLoadingContacts(false));
+    }
+  }, [activeTab, contactStatusFilter, isAllowedAdmin]);
+
   const { showSuccess, showError, showWarning, showInfo } = useToast();
 
   // ── Actions ─────────────────────────────────────────────────────────────────
@@ -188,6 +205,16 @@ export const AdminDashboardView: React.FC = () => {
       setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, isSuspended: false } : u));
       showSuccess('Account Restored', 'The user account access has been restored.');
     } catch { showError('Restore Failed', 'Failed to restore user.'); }
+  };
+
+  const handleContactStatus = async (id: string, status: ContactInquiry['status']) => {
+    try {
+      await AdminService.updateContactStatus(id, status);
+      setContactRequests((current) => current.map((item) => item.id === id ? { ...item, status } : item));
+      showSuccess('Inquiry Updated', `Support request marked ${status.toLowerCase().replace('_', ' ')}.`);
+    } catch (err: any) {
+      showError('Update Failed', err?.response?.data?.message || 'Unable to update this inquiry.');
+    }
   };
 
   const handleAdminDeleteResource = async (id: string, title: string) => {
@@ -260,6 +287,7 @@ export const AdminDashboardView: React.FC = () => {
     { id: 'moderation', label: `Moderation Queue${analytics ? ` (${analytics.pendingResources})` : ''}`, icon: FileText },
     { id: 'users', label: 'User Management', icon: Users },
     { id: 'audit', label: 'Audit Logs', icon: ScrollText },
+    { id: 'support', label: 'Support Inbox', icon: Inbox },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
   ];
 
@@ -662,6 +690,49 @@ export const AdminDashboardView: React.FC = () => {
       )}
 
       {/* ── TAB: ANNOUNCEMENTS ────────────────────────────────────────────────── */}
+      {activeTab === 'support' && (
+        <div className="space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-extrabold flex items-center gap-2"><Inbox className="w-5 h-5 text-blue-500" />Support Inbox</h2>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">Persistent inquiries submitted through the public Contact page.</p>
+            </div>
+            <select value={contactStatusFilter} onChange={(event) => setContactStatusFilter(event.target.value)} className="bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-bold">
+              {['ALL', 'NEW', 'IN_PROGRESS', 'RESOLVED', 'SPAM'].map((status) => <option key={status} value={status}>{status.replace('_', ' ')}</option>)}
+            </select>
+          </div>
+          {isLoadingContacts ? (
+            <div className="py-16 flex justify-center items-center gap-2 text-blue-600"><Loader2 className="w-5 h-5 animate-spin" />Loading support requests...</div>
+          ) : contactRequests.length === 0 ? (
+            <Card className="p-14 text-center text-sm text-slate-500 dark:text-zinc-400">No support inquiries found.</Card>
+          ) : (
+            <div className="space-y-3">
+              {contactRequests.map((item) => (
+                <Card key={item.id} className="p-5 bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 font-bold">{item.category.replace('_', ' ')}</span>
+                        <span className="text-[10px] font-bold text-slate-500">{item.status.replace('_', ' ')}</span>
+                        <span className="text-[10px] text-slate-400">Email: {item.emailStatus}</span>
+                      </div>
+                      <h3 className="font-extrabold mt-2">{item.subject}</h3>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400">{item.fullName} · <a className="text-blue-600 hover:underline" href={`mailto:${item.email}?subject=${encodeURIComponent(`Re: ${item.subject} [${item.id.slice(0, 8)}]`)}`}>{item.email}</a> · {formatRelativeTime(item.createdAt)}</p>
+                    </div>
+                    <select value={item.status} onChange={(event) => handleContactStatus(item.id, event.target.value as ContactInquiry['status'])} className="bg-slate-50 dark:bg-zinc-950 border border-slate-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-bold">
+                      {['NEW', 'IN_PROGRESS', 'RESOLVED', 'SPAM'].map((status) => <option key={status} value={status}>{status.replace('_', ' ')}</option>)}
+                    </select>
+                  </div>
+                  <p className="text-xs whitespace-pre-wrap leading-relaxed bg-slate-50 dark:bg-zinc-950 rounded-xl p-4 border border-slate-200 dark:border-zinc-800">{item.message}</p>
+                  {item.resourceUrl && <a href={item.resourceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline break-all">Related resource: {item.resourceUrl}</a>}
+                  <div className="text-[10px] text-slate-400 font-mono">Reference: {item.id}</div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'announcements' && (
         <div className="max-w-2xl space-y-6">
           <div>

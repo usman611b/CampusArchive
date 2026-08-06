@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AdminController } from '../controllers/admin.controller';
 import { authenticateJwt, requireRole, requirePermission } from '../middlewares/auth.middleware';
 import { Permission } from '@campusarchive/shared';
+import { ContactController } from '../controllers/contact.controller';
 
 const router = Router();
 
@@ -28,6 +29,10 @@ router.delete('/users/:id', requirePermission(Permission.MANAGE_ADMINS), AdminCo
 
 // ── Audit Logs (SUPER_ADMIN & ADMINISTRATOR) ──────────────────────────────
 router.get('/audit-logs', requirePermission(Permission.VIEW_AUDIT_LOGS), AdminController.getAuditLogs);
+
+// Support Inbox
+router.get('/contact-requests', requirePermission(Permission.MANAGE_USERS), ContactController.list);
+router.patch('/contact-requests/:id/status', requirePermission(Permission.MANAGE_USERS), ContactController.updateStatus);
 
 // ── Announcements / Notifications Broadcast ───────────────────────────────
 router.post('/announcements', requirePermission(Permission.SEND_ANNOUNCEMENTS), AdminController.sendAnnouncement);

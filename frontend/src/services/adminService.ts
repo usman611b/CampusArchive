@@ -53,6 +53,19 @@ export interface AuditLogItem {
   resource?: { title: string } | null;
 }
 
+export interface ContactInquiry {
+  id: string;
+  fullName: string;
+  email: string;
+  category: string;
+  subject: string;
+  message: string;
+  resourceUrl?: string | null;
+  status: 'NEW' | 'IN_PROGRESS' | 'RESOLVED' | 'SPAM';
+  emailStatus: string;
+  createdAt: string;
+}
+
 export interface UserUpload {
   id: string;
   title: string;
@@ -184,6 +197,19 @@ export class AdminService {
 
   static async deleteResource(id: string, reason?: string): Promise<void> {
     await apiClient.delete(`/admin/resources/${id}`, { data: { reason } });
+  }
+
+  static async getContactRequests(status = 'ALL'): Promise<ContactInquiry[]> {
+    const response = await apiClient.get(`/admin/contact-requests?status=${encodeURIComponent(status)}`);
+    return (response.data.data.inquiries || []).map((item: any) => ({
+      id: item.id, fullName: item.full_name, email: item.email, category: item.category,
+      subject: item.subject, message: item.message, resourceUrl: item.resource_url,
+      status: item.status, emailStatus: item.email_status, createdAt: item.created_at
+    }));
+  }
+
+  static async updateContactStatus(id: string, status: ContactInquiry['status']): Promise<void> {
+    await apiClient.patch(`/admin/contact-requests/${id}/status`, { status });
   }
 }
 
