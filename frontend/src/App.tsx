@@ -41,6 +41,7 @@ import { useAuth } from './context/AuthContext';
 import { BookmarksService } from './services/searchNotificationsBookmarksService';
 import { ResourceService } from './services/resourceService';
 import { supabaseClient } from './services/supabaseClient';
+import { useToast } from './context/ToastContext';
 
 // Map URL paths to activeView keys and vice versa
 const PATH_TO_VIEW: Record<string, string> = {
@@ -65,7 +66,8 @@ Object.entries(PATH_TO_VIEW).forEach(([path, view]) => {
 export const MainAppContent: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const { showInfo } = useToast();
 
   // Derive initial activeView from URL
   const getViewFromPath = useCallback((pathname: string) => {
@@ -129,6 +131,18 @@ export const MainAppContent: React.FC = () => {
 
   // Sync activeView when URL changes (e.g., from Navbar clicks)
   useEffect(() => {
+    if (isAuthLoading) return;
+
+    const protectedPaths = new Set([
+      '/dashboard', '/upload', '/bookmarks', '/my-uploads',
+      '/notifications', '/profile', '/admin'
+    ]);
+    if (!user && protectedPaths.has(location.pathname)) {
+      setIsUploadWizardOpen(false);
+      navigate('/login', { replace: true, state: { from: { pathname: location.pathname } } });
+      return;
+    }
+
     const viewFromUrl = getViewFromPath(location.pathname);
     if (viewFromUrl !== activeView) {
       setActiveView(viewFromUrl);
@@ -136,7 +150,7 @@ export const MainAppContent: React.FC = () => {
     if (location.pathname === '/upload') {
       setIsUploadWizardOpen(true);
     }
-  }, [location.pathname, getViewFromPath]);
+  }, [location.pathname, getViewFromPath, isAuthLoading, navigate, user]);
 
   // When activeView changes programmatically, update URL
   const handleSetActiveView = useCallback((view: string) => {
@@ -147,10 +161,21 @@ export const MainAppContent: React.FC = () => {
     }
   }, [navigate, location.pathname]);
 
+  const requestUpload = useCallback(() => {
+    if (!user) {
+      setIsUploadWizardOpen(false);
+      showInfo('Sign In Required', 'Please sign in to upload academic resources.');
+      navigate('/login', { state: { from: { pathname: '/upload' } } });
+      return;
+    }
+    setIsUploadWizardOpen(true);
+  }, [navigate, showInfo, user]);
+
   // Real API Bookmark Toggle with state sync
   const handleBookmarkToggle = async (id: string) => {
     if (!user) {
-      handleSetActiveView('login');
+      showInfo('Sign In Required', 'Please sign in to save resources.');
+      navigate('/login', { state: { from: { pathname: location.pathname } } });
       return;
     }
 
@@ -187,7 +212,7 @@ export const MainAppContent: React.FC = () => {
             onSelectResource={setSelectedResource}
             bookmarkedIds={bookmarkedIds}
             onBookmarkToggle={handleBookmarkToggle}
-            onNavigateToUpload={() => setIsUploadWizardOpen(true)}
+            onNavigateToUpload={requestUpload}
             onNavigateToAdmin={() => handleSetActiveView('admin')}
           />
         );
@@ -212,7 +237,7 @@ export const MainAppContent: React.FC = () => {
             onSelectResource={setSelectedResource}
             bookmarkedIds={bookmarkedIds}
             onBookmarkToggle={handleBookmarkToggle}
-            onNavigateToUpload={() => setIsUploadWizardOpen(true)}
+            onNavigateToUpload={requestUpload}
           />
         ) : (
           <AcademicsView
@@ -236,7 +261,7 @@ export const MainAppContent: React.FC = () => {
       case 'upload':
         return (
           <MyUploadsView
-            onNavigateToUpload={() => setIsUploadWizardOpen(true)}
+            onNavigateToUpload={requestUpload}
           />
         );
 
@@ -252,7 +277,7 @@ export const MainAppContent: React.FC = () => {
       case 'my-uploads':
         return (
           <MyUploadsView
-            onNavigateToUpload={() => setIsUploadWizardOpen(true)}
+            onNavigateToUpload={requestUpload}
           />
         );
 
@@ -271,7 +296,7 @@ export const MainAppContent: React.FC = () => {
             <LandingHero
               onSearchSubmit={() => handleSetActiveView('search')}
               onBrowseClick={() => handleSetActiveView('academics')}
-              onUploadClick={() => setIsUploadWizardOpen(true)}
+              onUploadClick={requestUpload}
             />
             <DepartmentExplorer onSelectDepartment={(dept) => {
               setSelectedDeptSlug(dept);
@@ -282,7 +307,7 @@ export const MainAppContent: React.FC = () => {
             <ContributorSpotlight />
             <JoinVaultCTA
               onBrowseClick={() => handleSetActiveView('academics')}
-              onUploadClick={() => setIsUploadWizardOpen(true)}
+              onUploadClick={requestUpload}
             />
           </>
         );
@@ -311,7 +336,7 @@ export const MainAppContent: React.FC = () => {
             activeView={activeView}
             setActiveView={(view) => {
               if (view === 'upload') {
-                setIsUploadWizardOpen(true);
+                requestUpload();
               } else {
                 handleSetActiveView(view);
               }
