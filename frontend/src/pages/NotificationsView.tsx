@@ -8,6 +8,7 @@ import {
   NotificationItem
 } from '../services/searchNotificationsBookmarksService';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import {
   Bell,
   CheckCircle2,
@@ -23,6 +24,7 @@ import {
 
 export const NotificationsView: React.FC = () => {
   const { user } = useAuth();
+  const { showError, showSuccess } = useToast();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,7 +53,10 @@ export const NotificationsView: React.FC = () => {
     try {
       await NotificationsService.markAllRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      window.dispatchEvent(new Event('notifications_updated'));
+      window.dispatchEvent(new CustomEvent('notifications_updated', { detail: { unreadCount: 0 } }));
+      showSuccess('Notifications Updated', 'All notifications have been marked as read.');
+    } catch (err: any) {
+      showError('Update Failed', err?.response?.data?.message || 'Unable to mark notifications as read.');
     } finally {
       setIsActing(false);
     }
@@ -63,8 +68,11 @@ export const NotificationsView: React.FC = () => {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       );
-      window.dispatchEvent(new Event('notifications_updated'));
-    } catch {}
+      const remainingUnread = notifications.filter((n) => !n.isRead && n.id !== id).length;
+      window.dispatchEvent(new CustomEvent('notifications_updated', { detail: { unreadCount: remainingUnread } }));
+    } catch (err: any) {
+      showError('Update Failed', err?.response?.data?.message || 'Unable to mark this notification as read.');
+    }
   };
 
   const handleClearAll = async () => {
@@ -73,7 +81,10 @@ export const NotificationsView: React.FC = () => {
     try {
       await NotificationsService.clearAll();
       setNotifications([]);
-      window.dispatchEvent(new Event('notifications_updated'));
+      window.dispatchEvent(new CustomEvent('notifications_updated', { detail: { unreadCount: 0 } }));
+      showSuccess('Notifications Cleared', 'All notifications have been removed.');
+    } catch (err: any) {
+      showError('Clear Failed', err?.response?.data?.message || 'Unable to clear notifications.');
     } finally {
       setIsActing(false);
     }

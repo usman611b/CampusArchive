@@ -52,14 +52,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, activeTab, setActi
       });
     };
 
+    const handleNotificationsUpdated = (event: Event) => {
+      const nextCount = (event as CustomEvent<{ unreadCount?: number }>).detail?.unreadCount;
+      if (typeof nextCount === 'number') {
+        setUnreadCount(Math.max(0, nextCount));
+      }
+      loadUnread();
+    };
+
     loadUnread();
     const timer = setInterval(loadUnread, 10000);
     window.addEventListener('notification_received', loadUnread);
-    window.addEventListener('notifications_updated', loadUnread);
+    window.addEventListener('notifications_updated', handleNotificationsUpdated);
     return () => {
       clearInterval(timer);
       window.removeEventListener('notification_received', loadUnread);
-      window.removeEventListener('notifications_updated', loadUnread);
+      window.removeEventListener('notifications_updated', handleNotificationsUpdated);
     };
   }, [user]);
 

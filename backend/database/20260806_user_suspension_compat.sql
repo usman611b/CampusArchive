@@ -12,6 +12,10 @@ CREATE INDEX IF NOT EXISTS idx_users_is_suspended
 ALTER TABLE public.notifications
   ADD COLUMN IF NOT EXISTS description TEXT;
 
+ALTER TABLE public.notifications
+  ADD COLUMN IF NOT EXISTS is_read BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ;
+
 DO $compat$
 BEGIN
   IF EXISTS (
