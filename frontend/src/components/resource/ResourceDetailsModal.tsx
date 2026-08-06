@@ -8,12 +8,15 @@ import { ResourceComment, ResourceService, RatingSummary } from '../../services/
 import { supabaseClient } from '../../services/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface Props { resource: ResourceItem | null; onClose: () => void; isBookmarked?: boolean; onBookmarkToggle?: (id: string) => void; }
 
 export const ResourceDetailsModal: React.FC<Props> = ({ resource, onClose, isBookmarked = false, onBookmarkToggle }) => {
   const { user } = useAuth();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showInfo } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [detail, setDetail] = useState<any>(null);
   const [ratings, setRatings] = useState<RatingSummary | null>(null);
   const [comments, setComments] = useState<ResourceComment[]>([]);
@@ -130,6 +133,12 @@ export const ResourceDetailsModal: React.FC<Props> = ({ resource, onClose, isBoo
   };
 
   const download = async () => {
+    if (!user) {
+      showInfo('Sign In Required', 'Please sign in to download academic resources.');
+      onClose();
+      navigate('/login', { state: { from: { pathname: location.pathname } } });
+      return;
+    }
     try { const data = await ResourceService.downloadResource(resource.id); window.open(data.downloadUrl, '_blank', 'noopener,noreferrer'); }
     catch (err: any) { showError('Download failed', err?.response?.data?.message || 'Could not prepare the download.'); }
   };

@@ -37,7 +37,7 @@ router.get('/course/:courseId/contributors', ResourceController.getCourseContrib
 
 // Individual Resource
 router.get('/:id', optionalAuthenticateJwt, ResourceController.getResourceById);
-router.post('/:id/download', optionalAuthenticateJwt, downloadLimiter, ResourceController.downloadResource);
+router.post('/:id/download', authenticateJwt, downloadLimiter, ResourceController.downloadResource);
 router.post('/:id/bookmark', authenticateJwt, ResourceController.toggleBookmark);
 router.post('/:id/rate', authenticateJwt, ResourceController.rateResource);
 

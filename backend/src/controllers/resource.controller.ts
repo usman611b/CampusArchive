@@ -41,7 +41,7 @@ export class ResourceController {
 
   static async getMyUploads(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user!.id;
+      const userId = req.user?.id;
       const { data: resources, error } = await supabase
         .from('resources')
         .select(`
@@ -93,7 +93,7 @@ export class ResourceController {
   static async getResourceById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const userId = req.user?.id;
+      const userId = req.user!.id;
       const ipAddress = req.ip;
       const resource = await ResourceService.getResourceDetail(id, userId, req.user?.role as string | undefined, ipAddress);
       return res.status(200).json({
@@ -109,10 +109,10 @@ export class ResourceController {
   static async downloadResource(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const userId = req.user?.id;
+      const userId = req.user!.id;
       const ipAddress = req.ip;
       const deviceInfo = req.headers['user-agent'];
-      const downloadData = await ResourceService.downloadResource(id, userId, req.user?.role as string | undefined, ipAddress, deviceInfo);
+      const downloadData = await ResourceService.downloadResource(id, userId, req.user!.role as string, ipAddress, deviceInfo);
       return res.status(200).json({
         success: true,
         message: 'Download audit logged.',
