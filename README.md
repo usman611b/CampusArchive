@@ -2,6 +2,8 @@
 
 > **Preserving Knowledge. Empowering Students.**
 
+This is a Campus Archive for u 
+
 CampusArchive is a full-stack academic resource-sharing platform for university communities. It gives students one organized place to discover, upload, review, discuss, bookmark, and download verified academic material while giving moderators and administrators the tools required to keep the archive trustworthy.
 
 The application is built as a TypeScript monorepo using React, Express, and Supabase. It includes an academic hierarchy, resource moderation, realtime interactions, contributor karma, dashboards, notifications, search, bookmarks, audit logs, and role-based administration.
