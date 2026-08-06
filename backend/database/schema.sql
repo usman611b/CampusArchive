@@ -252,7 +252,7 @@ CREATE TABLE IF NOT EXISTS public.notifications (
     actor_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
     type VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
     title VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
+    description TEXT NOT NULL,
     is_read BOOLEAN DEFAULT FALSE,
     read_at TIMESTAMP WITH TIME ZONE,
     metadata JSONB,

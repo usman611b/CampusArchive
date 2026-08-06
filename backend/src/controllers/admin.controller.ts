@@ -233,14 +233,14 @@ export class AdminController {
 
       let query = supabase
         .from('users')
-        .select('id, full_name, username, email, role, deleted_at, created_at, avatar_url, university_name', { count: 'exact' });
+        .select('id, full_name, username, email, role, is_suspended, deleted_at, created_at, avatar_url, university_name', { count: 'exact' });
 
       if (safeSearch) {
         query = query.or(`full_name.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%,username.ilike.%${safeSearch}%`);
       }
       if (role && role !== 'ALL') query = query.eq('role', role);
-      if (status === 'suspended') query = query.not('deleted_at', 'is', null);
-      if (status === 'active') query = query.is('deleted_at', null);
+      if (status === 'suspended') query = query.eq('is_suspended', true).is('deleted_at', null);
+      if (status === 'active') query = query.eq('is_suspended', false).is('deleted_at', null);
 
       query = query.order('created_at', { ascending: false }).range(offset, offset + safeLimit - 1);
 
@@ -262,7 +262,7 @@ export class AdminController {
       const { id } = req.params;
       const { data: user, error } = await supabase
         .from('users')
-        .select('id, full_name, username, email, role, deleted_at, created_at, avatar_url, university_name, bio')
+        .select('id, full_name, username, email, role, is_suspended, deleted_at, created_at, avatar_url, university_name, bio')
         .eq('id', id)
         .single();
 
@@ -284,7 +284,7 @@ export class AdminController {
             username: user.username,
             email: user.email,
             role: user.role,
-            isSuspended: !!user.deleted_at,
+            isSuspended: !!user.is_suspended,
             createdAt: user.created_at,
             avatarUrl: user.avatar_url,
             universityName: user.university_name,
@@ -355,7 +355,7 @@ export class AdminController {
 
       const { error } = await supabase
         .from('users')
-        .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .update({ is_suspended: true, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
@@ -383,7 +383,7 @@ export class AdminController {
 
       const { error } = await supabase
         .from('users')
-        .update({ deleted_at: null, updated_at: new Date().toISOString() })
+        .update({ is_suspended: false, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;

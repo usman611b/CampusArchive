@@ -131,7 +131,11 @@ export const AdminDashboardView: React.FC = () => {
       setIsLoadingUsers(true);
       AdminService.getUsers({ q: userQuery, role: userRoleFilter !== 'ALL' ? userRoleFilter : undefined })
         .then(({ users, total }) => { setUsers(users); setUserTotal(total); })
-        .catch(() => {})
+        .catch((err: any) => {
+          setUsers([]);
+          setUserTotal(0);
+          showError('Users Failed to Load', err?.response?.data?.message || 'Unable to load users. Please try again.');
+        })
         .finally(() => setIsLoadingUsers(false));
     }
   }, [activeTab, userQuery, userRoleFilter, isAllowedAdmin]);

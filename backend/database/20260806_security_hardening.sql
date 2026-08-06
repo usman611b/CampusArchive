@@ -3,6 +3,9 @@
 
 -- Browser clients use the anon key only for Realtime invalidation events.
 -- All application reads and writes otherwise pass through the Express API.
+ALTER TABLE public.users
+  ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT FALSE;
+
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
 
 GRANT SELECT ON public.resource_ratings TO anon, authenticated;
