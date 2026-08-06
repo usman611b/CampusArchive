@@ -117,7 +117,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, activeTab, setActi
             {[
               { label: 'Home', key: 'home', path: '/' },
               { label: 'Browse', key: 'academics', path: '/browse' },
-              { label: 'Contact', key: 'contact', path: '/contact' },
               { label: 'Upload', key: 'upload', path: '/upload' },
               { label: 'Dashboard', key: 'dashboard', path: '/dashboard' },
             ].map((link) => (
