@@ -86,7 +86,7 @@
 ---
 
 # 2. Sprint Execution Plan (Sprints 1 – 6)
-
+Sprint of our project :
 ```
 Timeline: 12-Week Agile Delivery Schedule (2-Week Iterations)
 +-----------------------------------------------------------------------------------+
