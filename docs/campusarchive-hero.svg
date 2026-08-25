@@ -1,0 +1,63 @@
+<svg width="1200" height="340" viewBox="0 0 1200 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="340" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#05060A"/>
+      <stop offset="0.55" stop-color="#07131A"/>
+      <stop offset="1" stop-color="#180A20"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="120" y1="0" x2="1100" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#45F3FF"/>
+      <stop offset="0.5" stop-color="#43A9FF"/>
+      <stop offset="1" stop-color="#B05CFF"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(905 250) rotate(-20) scale(360 230)">
+      <stop stop-color="#20DDF5" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#20DDF5" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1120 90) rotate(150) scale(320 210)">
+      <stop stop-color="#B05CFF" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#B05CFF" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M42 0H0V42" stroke="#7D8A9A" stroke-opacity="0.07"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="340" rx="26" fill="url(#bg)"/>
+  <rect width="1200" height="340" rx="26" fill="url(#grid)"/>
+  <rect width="1200" height="340" rx="26" fill="url(#glow1)"/>
+  <rect width="1200" height="340" rx="26" fill="url(#glow2)"/>
+
+  <circle cx="82" cy="66" r="4" fill="#45F3FF"/>
+  <text x="100" y="72" fill="#45F3FF" font-size="14" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="700" letter-spacing="4">FULL-STACK ACADEMIC PLATFORM</text>
+
+  <text x="78" y="155" fill="#F8FAFC" font-size="62" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="800">CampusArchive</text>
+  <text x="80" y="201" fill="url(#accent)" font-size="27" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="700">Preserving knowledge. Empowering students.</text>
+  <text x="80" y="242" fill="#C3CEDB" font-size="18" font-family="Inter, Segoe UI, Arial, sans-serif">Moderated resources • course-aware search • realtime interaction • role-based administration</text>
+
+  <rect x="80" y="275" width="112" height="34" rx="10" fill="#0B1D24" stroke="#45F3FF" stroke-opacity="0.42"/>
+  <text x="106" y="297" fill="#E6FCFF" font-size="13" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="700">REACT</text>
+  <rect x="206" y="275" width="128" height="34" rx="10" fill="#0B1725" stroke="#43A9FF" stroke-opacity="0.42"/>
+  <text x="225" y="297" fill="#EAF6FF" font-size="13" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="700">TYPESCRIPT</text>
+  <rect x="348" y="275" width="126" height="34" rx="10" fill="#0D1527" stroke="#5EA2FF" stroke-opacity="0.42"/>
+  <text x="371" y="297" fill="#EEF4FF" font-size="13" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="700">EXPRESS</text>
+  <rect x="488" y="275" width="130" height="34" rx="10" fill="#111227" stroke="#7D7CFF" stroke-opacity="0.42"/>
+  <text x="508" y="297" fill="#F2F0FF" font-size="13" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="700">SUPABASE</text>
+  <rect x="632" y="275" width="140" height="34" rx="10" fill="#160F23" stroke="#A168FF" stroke-opacity="0.42"/>
+  <text x="651" y="297" fill="#F7EFFF" font-size="13" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="700">POSTGRESQL</text>
+
+  <g stroke="url(#accent)" stroke-width="1.4" stroke-opacity="0.34">
+    <path d="M838 70L945 105L1048 62L1140 119L1088 219L980 188L895 257L820 205Z"/>
+    <path d="M895 257L1001 297L1088 219L1160 255"/>
+  </g>
+  <g fill="#45F3FF">
+    <circle cx="945" cy="105" r="4"/>
+    <circle cx="895" cy="257" r="4"/>
+    <circle cx="980" cy="188" r="3"/>
+  </g>
+  <g fill="#B05CFF">
+    <circle cx="1048" cy="62" r="3"/>
+    <circle cx="1140" cy="119" r="4"/>
+    <circle cx="1088" cy="219" r="4"/>
+  </g>
+</svg>
